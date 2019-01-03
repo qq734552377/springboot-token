@@ -1,8 +1,12 @@
 package com.pjb.springbootjjwt.interceptor;
 
 import com.alibaba.fastjson.JSONObject;
+import com.pjb.springbootjjwt.entity.BaseResult;
+import com.pjb.springbootjjwt.entity.RequestState;
+import com.pjb.springbootjjwt.exceptions.AthException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 /**
@@ -22,4 +26,14 @@ public class GloablExceptionHandler {
         jsonObject.put("message", msg);
         return jsonObject;
     }
+
+    @ResponseBody
+    @ExceptionHandler(AthException.class)
+    public BaseResult handleAthException(AthException e){
+        BaseResult baseResult = new BaseResult();
+        baseResult.setStatus(RequestState.FAIL);
+        baseResult.setInfo(e.getMessage());
+        return baseResult;
+    }
+
 }

@@ -1,6 +1,7 @@
 package com.pjb.springbootjjwt.tools;
 
 import com.pjb.springbootjjwt.entity.User;
+import com.pjb.springbootjjwt.exceptions.AthException;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtBuilder;
 import io.jsonwebtoken.Jwts;
@@ -74,16 +75,21 @@ public class JWTTool {
      * @param user  用户的对象
      * @return
      */
-    public static Claims parseJWT(String token, User user) {
-        //签名秘钥，和生成的签名的秘钥一模一样
-        String key = user.getPassword();
+    public static Claims parseJWT(String token, User user) throws AthException{
+        Claims claims = null;
+        try {
+            //签名秘钥，和生成的签名的秘钥一模一样
+            String key = user.getPassword();
 
-        //得到DefaultJwtParser
-        Claims claims = Jwts.parser()
-                //设置签名的秘钥
-                .setSigningKey(key)
-                //设置需要解析的jwt
-                .parseClaimsJws(token).getBody();
+            //得到DefaultJwtParser
+            claims = Jwts.parser()
+                    //设置签名的秘钥
+                    .setSigningKey(key)
+                    //设置需要解析的jwt
+                    .parseClaimsJws(token).getBody();
+        }catch (Exception e){
+            throw new AthException("token不正确，可能已经过期，请重新登录");
+        }
         return claims;
     }
 
@@ -95,7 +101,7 @@ public class JWTTool {
      * @param user
      * @return
      */
-    public static Boolean isVerify(String token, User user) {
+    public static Boolean isVerify(String token, User user) throws AthException{
 
         Claims claims = parseJWT(token,user);
 

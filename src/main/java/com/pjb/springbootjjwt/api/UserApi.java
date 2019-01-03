@@ -4,11 +4,14 @@ import com.alibaba.fastjson.JSONObject;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.interfaces.Claim;
 import com.auth0.jwt.interfaces.DecodedJWT;
+import com.pjb.springbootjjwt.annotation.PassToken;
 import com.pjb.springbootjjwt.annotation.UserLoginToken;
 import com.pjb.springbootjjwt.entity.User;
+import com.pjb.springbootjjwt.exceptions.AthException;
 import com.pjb.springbootjjwt.service.TokenService;
 import com.pjb.springbootjjwt.service.UserService;
 import com.pjb.springbootjjwt.tools.JWTTool;
+import org.apache.catalina.servlet4preview.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -27,7 +30,7 @@ public class UserApi {
     TokenService tokenService;
     //登录
     @PostMapping("/login")
-    public Object login(@RequestBody User user){
+    public Object login(@RequestBody User user, @RequestHeader("user-agent") String user_agent){
         JSONObject jsonObject=new JSONObject();
         User userForBase=userService.findByUsername(user);
         if(userForBase==null){
@@ -49,12 +52,17 @@ public class UserApi {
     }
     @UserLoginToken
     @GetMapping("/getMessage")
-    public String getMessage(@RequestHeader String token,@RequestHeader String tk){
+    public String getMessage(@RequestHeader String token,@RequestHeader String tk) throws AthException{
         DecodedJWT f= JWT.decode(tk);
         Map<String, Claim> claims = f.getClaims();
         String id = f.getClaim("id").asString();
         User user = userService.findUserById(id);
         JWTTool.isVerify(tk,user);
         return "你已通过验证";
+    }
+
+    @GetMapping("test/{test}")
+    public String testNoAth(@PathVariable String test){
+        return test;
     }
 }
