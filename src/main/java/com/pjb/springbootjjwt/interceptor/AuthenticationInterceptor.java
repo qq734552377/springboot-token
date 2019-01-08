@@ -32,6 +32,7 @@ public class AuthenticationInterceptor implements HandlerInterceptor {
     @Override
     public boolean preHandle(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse, Object object) throws AthException {
         String token = httpServletRequest.getHeader("token");// 从 http 请求头中取出 token
+
         // 如果不是映射到方法直接通过
         if(!(object instanceof HandlerMethod)){
             return true;
@@ -60,6 +61,9 @@ public class AuthenticationInterceptor implements HandlerInterceptor {
                 } catch (JWTDecodeException j) {
                     throw new AthException("401");
                 }
+                //TODO 从缓存中取出token  作为和header中的token做对比 先判断是否相等判断再做下面的token验证
+
+
                 User user = userService.findUserById(userId);
                 if (user == null) {
                     throw new AthException("用户不存在，请重新登录");

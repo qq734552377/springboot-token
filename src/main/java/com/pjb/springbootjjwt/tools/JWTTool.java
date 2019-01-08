@@ -1,16 +1,16 @@
 package com.pjb.springbootjjwt.tools;
 
+import com.auth0.jwt.JWT;
 import com.pjb.springbootjjwt.entity.User;
 import com.pjb.springbootjjwt.exceptions.AthException;
+import com.sun.org.apache.xml.internal.security.exceptions.Base64DecodingException;
+import com.sun.org.apache.xml.internal.security.utils.Base64;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtBuilder;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * Created by pj on 2018/12/28.
@@ -36,13 +36,14 @@ public class JWTTool {
         Map<String, Object> claims = new HashMap<String, Object>();
         claims.put("id", user.getId());
         claims.put("username", user.getUsername());
-        claims.put("password", user.getPassword());
+        String key = getEncodePwd(user.getPassword(),Integer.parseInt(user.getId()));
+        claims.put("password", key);
 
         //生成签名的时候使用的秘钥secret,这个方法本地封装了的，一般可以从本地配置文件中读取，切记这个秘钥不能外露哦。它就是你服务端的私钥，在任何场景都不应该流露出去。一旦客户端得知这个secret, 那就意味着客户端是可以自我签发jwt了。
-        String key = user.getPassword();
+
 
         //生成签发人
-        String subject = user.getUsername();
+        String subject = "这是私有声明";
 
 
 
@@ -79,7 +80,7 @@ public class JWTTool {
         Claims claims = null;
         try {
             //签名秘钥，和生成的签名的秘钥一模一样
-            String key = user.getPassword();
+            String key = JWT.decode(token).getClaim("password").asString();
 
             //得到DefaultJwtParser
             claims = Jwts.parser()
@@ -88,7 +89,7 @@ public class JWTTool {
                     //设置需要解析的jwt
                     .parseClaimsJws(token).getBody();
         }catch (Exception e){
-            throw new AthException("token不正确，可能已经过期，请重新登录");
+            throw new AthException(e.toString());
         }
         return claims;
     }
@@ -104,12 +105,45 @@ public class JWTTool {
     public static Boolean isVerify(String token, User user) throws AthException{
 
         Claims claims = parseJWT(token,user);
-
-        if (claims.get("password").equals(user.getPassword())) {
+        String base64Str = (String) claims.get("password");
+        int id = Integer.parseInt(claims.get("id").toString());
+        if (getDecodePwd(base64Str,id).equals(user.getPassword())) {
             return true;
         }
 
         return false;
     }
 
+
+    public static String getEncodePwd(String pwd, int userid){
+        byte[] bytes = pwd.getBytes();
+        byte[] br = new byte[bytes.length];
+        for (int i = 0; i < bytes.length; i++) {
+            br[i] = (byte) (userid ^ bytes[i]) ;
+        }
+        return Base64.encode(br,Base64.BASE64DEFAULTLENGTH);
+    }
+
+    public static String getDecodePwd(String pwdBase64,int id){
+
+        byte[] br = null;
+        try {
+             br = Base64.decode(pwdBase64);
+        } catch (Base64DecodingException e) {
+            e.printStackTrace();
+        }
+        byte[] pwd = new byte[br.length];
+        for (int i = 0; i < br.length; i++) {
+            pwd[i] = (byte)(br[i] ^ id);
+        }
+        return new String(pwd);
+    }
+
+    public static String getStringByYH(String str){
+        byte[] bytes = str.getBytes();
+        for (int i = 0; i < bytes.length; i++) {
+            bytes[i] = (byte) (bytes[i] ^ bytes[i]);
+        }
+        return new String(bytes);
+    }
 }

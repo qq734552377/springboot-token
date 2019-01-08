@@ -6,6 +6,8 @@ import com.auth0.jwt.interfaces.Claim;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.pjb.springbootjjwt.annotation.PassToken;
 import com.pjb.springbootjjwt.annotation.UserLoginToken;
+import com.pjb.springbootjjwt.entity.BaseResult;
+import com.pjb.springbootjjwt.entity.RequestState;
 import com.pjb.springbootjjwt.entity.User;
 import com.pjb.springbootjjwt.exceptions.AthException;
 import com.pjb.springbootjjwt.service.TokenService;
@@ -42,8 +44,15 @@ public class UserApi {
                 return jsonObject;
             }else {
                 String token = tokenService.getToken(userForBase);
-                String tk = JWTTool.createJWT(100000,userForBase);
+                String tk = JWTTool.createJWT(10*60*1000,userForBase);
                 jsonObject.put("token", token);
+                //todo 可以将token存入缓存中  以方便作为唯一token认证  如果缓存中没有token则存入 如果有则替换
+                try{
+//                    Thread.sleep(10*1000);
+                }catch (Exception e){
+
+                }
+
                 jsonObject.put("user", userForBase);
                 jsonObject.put("user2", tk);
                 return jsonObject;
@@ -52,13 +61,20 @@ public class UserApi {
     }
     @UserLoginToken
     @GetMapping("/getMessage")
-    public String getMessage(@RequestHeader String token,@RequestHeader String tk) throws AthException{
+    public BaseResult getMessage(@RequestHeader String token,@RequestHeader String tk) throws AthException{
+        BaseResult baseResult = new BaseResult();
         DecodedJWT f= JWT.decode(tk);
         Map<String, Claim> claims = f.getClaims();
         String id = f.getClaim("id").asString();
         User user = userService.findUserById(id);
-        JWTTool.isVerify(tk,user);
-        return "你已通过验证";
+        if(JWTTool.isVerify(tk,user)){
+            baseResult.setStatus(RequestState.SUCCESS);
+            baseResult.setInfo("你已通过验证");
+        }else {
+            baseResult.setStatus(RequestState.FAIL);
+            baseResult.setInfo("无效验证，请重新登录");
+        }
+        return baseResult;
     }
 
     @GetMapping("test/{test}")
